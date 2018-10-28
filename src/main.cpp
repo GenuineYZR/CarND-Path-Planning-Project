@@ -254,7 +254,8 @@ int main() {
 			// Walk through all the other cars around us and try to control the action of our car based on them.
 			int pre_size = previous_path_x.size();
 			bool too_close = false;
-			vector<double> risk_lane0; // Check the s value those cars on the adjacent lane for future use i.e. lane change.
+			// Check if there is any car within the risk range of the adjacent lanes. If so, add one element in the vector.
+			vector<double> risk_lane0; 
 			vector<double> risk_lane1;
 			vector<double> risk_lane2;
 
@@ -272,21 +273,21 @@ int main() {
 				double check_speed = sqrt(vx * vx + vy * vy);
 				double diff_d = 2 + 4 * lane - check_d;
 				
-				if (abs(diff_d) < 2)
+				if (abs(diff_d) < 2) // Check those cars in the same lane with us.
 				{										
 					check_s += (double)pre_size * 0.02 * check_speed; // If using previous path points can project s out.
 					
-					if ((check_s > car_s) && ((check_s - car_s) < 20))
+					if ((check_s > car_s) && ((check_s - car_s) < 20)) // When those cars in front of us and within the distance of 20 meters, it can be too close.
 					{
 						too_close = true;// Flag to change the velocity and change lane.				
 					}
 				}
-				else if (abs(diff_d) > 2 && abs(diff_d) < 6)
+				else if (abs(diff_d) > 2 && abs(diff_d) < 6) // Check those cars on the adjacent lane.
 				{
 					check_s += (double)pre_size * 0.02 * check_speed;
 					double diff_s = check_s - car_s;
 					
-					if ((diff_s > -20) && (diff_s) < 10) // Check if there is any risk to change lane, if the difference of s value is within -20m and 10m, there is a risk.
+					if ((diff_s > -20) && (diff_s) < 10) // Check if there is any risk to change lane, in this case I just set the range of diff_s value when there might be a risk within -20m and 10m.
 					{
 						if (check_d < 4)
 						{
@@ -312,29 +313,25 @@ int main() {
 				switch (lane)
 				{
 				case 0:
-					if (risk_lane1.size() == 0)
+					if (risk_lane1.size() == 0) // If the size is zero it means no risk in this lane if lane change is necessary.
 					{
 						lane = 1;
-						cout << "change to lane 1" << endl;
 					}
 					break;
 				case 1:
 					if (risk_lane0.size() == 0)
 					{
 						lane = 0;
-						cout << "change to lane 0" << endl;
 					}
 					else if (risk_lane2.size() == 0)
 					{
 						lane = 2;
-						cout << "change to lane 2" << endl;
 					}
 					break;
 				case 2:
 					if (risk_lane1.size() == 0)
 					{
 						lane = 1;
-						cout << "change to lane 1" << endl;
 					}
 					break;
 				}
@@ -398,15 +395,10 @@ int main() {
 				spline_x_vals[i] = shift_x * cos(ref_yaw) + shift_y * sin(ref_yaw);
 				spline_y_vals[i] = shift_y * cos(ref_yaw) - shift_x * sin(ref_yaw);
 			}
-			//cout << spline_x_vals[0] << " " << spline_x_vals[1] << " " << spline_x_vals[2] << " " << spline_x_vals[3] << " " << spline_x_vals[4] << endl;
 			// Generate the spline and fit it with the reference points.
 			tk::spline s;
 			s.set_points(spline_x_vals, spline_y_vals);
-
-			double target_x = 30; // Suppose the car go 30m in the x direction in the car space.
-			double target_y = s(target_x);
-			double target_dis = distance(0, 0, target_x, target_y);
-			
+		
 			// First add all the previous points to the path planner.
 			for (int i = 0; i < pre_size; i++)
 			{
@@ -416,6 +408,10 @@ int main() {
 			// Then add the rest of the points to the path planner.
 			double x_start = 0;
 			
+			double target_x = 30; // Suppose the car go 30m in the x direction in the car space.
+			double target_y = s(target_x);
+			double target_dis = distance(0, 0, target_x, target_y);
+
 			for (int i = 0; i < 50 - pre_size; i++)
 			{
 				double N = target_dis / (0.02 * (ref_v / 2.24));// Calculate the number of points needed for the path planner in order to get the car run within the speed limit.
